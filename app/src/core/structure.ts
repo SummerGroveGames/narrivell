@@ -39,12 +39,16 @@ export interface ContainerNode {
   levelId: string;
   title: string;
   children: TreeNode[];
+  /** Left out of numbering, e.g. a Prologue or Epilogue. */
+  unnumbered?: boolean;
 }
 
 export interface UnitNode {
   kind: 'unit';
   id: string;
   title: string;
+  /** Left out of numbering, e.g. a Prologue or Epilogue. */
+  unnumbered?: boolean;
 }
 
 export type TreeNode = ContainerNode | UnitNode;
@@ -180,6 +184,11 @@ export function numberTree(book: Book): Map<string, NodeNumber> {
     for (const node of nodes) {
       const level =
         node.kind === 'unit' ? unit : book.structure.levels[levelIndex(book.structure, node.levelId)];
+      if (node.unnumbered) {
+        result.set(node.id, { number: '', label: '' });
+        if (node.kind === 'container') visit(node.children, node.id, '');
+        continue;
+      }
       const n = next(level, parentId);
       const own = formatNumber(n, level.numberStyle);
       const number = level.compound && parentNumber && own ? `${parentNumber}.${own}` : own;

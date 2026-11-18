@@ -19,7 +19,8 @@
         "height": 800,
         "minWidth": 480,
         "minHeight": 400,
-        "center": true
+        "center": true,
+        "dragDropEnabled": false
       }
     ],
     "security": {
@@ -41,12 +42,15 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "msi"],
+    "targets": [
+      "nsis",
+      "msi"
+    ],
     "publisher": "Summer Grove Software",
     "copyright": "© 2026 Summer Grove Software",
     "category": "Productivity",
     "shortDescription": "A writing app that never loses a word",
-    "longDescription": "Narrivell is a free, open-source writing app for novelists. Your book stays on your own devices and in your own storage.",
+    "longDescription": "Narrivell is a writing app for novelists and non-fiction authors. Your book stays on your own computer, in folders you choose. No accounts, no tracking.",
     "homepage": "https://github.com/SummerGroveGames/narrivell",
     "license": "LicenseRef-Narrivell-Source-Available",
     "icon": [
@@ -64,6 +68,11 @@
         "installMode": "perMachine",
         "displayLanguageSelector": false
       }
+    }
+  },
+  "plugins": {
+    "fs": {
+      "requireLiteralLeadingDot": false
     }
   }
 }

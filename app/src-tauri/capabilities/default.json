@@ -1,7 +1,27 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Least privilege: the main window gets no native permissions until a feature needs one. Add each permission explicitly and review it.",
-  "windows": ["main"],
-  "permissions": []
+  "description": "Least privilege. File access is limited to folders the author picks in the folder dialog (granted at run time by pick_folder). There is deliberately no permission to delete files. The only thing that can be opened outside the app is a mailto: link (Help menu).",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "core:window:allow-destroy",
+    "fs:allow-exists",
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
+    "fs:allow-read-dir",
+    "fs:allow-mkdir",
+    "fs:allow-rename",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        {
+          "url": "mailto:*"
+        }
+      ]
+    }
+  ]
 }

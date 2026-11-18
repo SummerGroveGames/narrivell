@@ -34,6 +34,8 @@ export interface ProjectFile {
   settings: ProjectSettings;
   /** Top-level nodes of the binder tree, in reading order. */
   tree: TreeNode[];
+  /** Items removed from the manuscript. Their text stays on disk and can be restored. */
+  trash: TreeNode[];
 }
 
 const LIMITS = {
@@ -182,6 +184,7 @@ function readTree(v: unknown, p: Problems, depth: number, count: { n: number }):
     }
     if (raw.kind === 'unit') {
       const unit: UnitNode = { kind: 'unit', id: id(raw.id, 'A unit', p), title: str(raw.title, 'A unit title', p) };
+      if (raw.unnumbered === true) unit.unnumbered = true;
       out.push(unit);
     } else if (raw.kind === 'container') {
       const node: ContainerNode = {
@@ -191,6 +194,7 @@ function readTree(v: unknown, p: Problems, depth: number, count: { n: number }):
         title: str(raw.title, 'A section title', p),
         children: readTree(raw.children, p, depth + 1, count),
       };
+      if (raw.unnumbered === true) node.unnumbered = true;
       out.push(node);
     } else {
       p.add('A binder item has an unknown type.');
@@ -211,6 +215,7 @@ export function parseProjectFile(json: string): ParseResult {
     return { ok: false, problems: ['project.json is not valid JSON.'] };
   }
   const p = new Problems();
+  const count = { n: 0 };
   if (!isObject(raw)) return { ok: false, problems: ['project.json is malformed.'] };
   if (raw.format !== FORMAT_VERSION) {
     return {
@@ -227,7 +232,8 @@ export function parseProjectFile(json: string): ParseResult {
     title: str(raw.title, 'Title', p),
     author: str(raw.author, 'Author', p),
     settings: readSettings(raw.settings, p),
-    tree: readTree(raw.tree, p, 0, { n: 0 }),
+    tree: readTree(raw.tree, p, 0, count),
+    trash: raw.trash === undefined ? [] : readTree(raw.trash, p, 0, count),
   };
   if (p.list.length === 0) {
     const book: Book = { structure: { levels: project.settings.levels }, children: project.tree };
@@ -236,7 +242,8 @@ export function parseProjectFile(json: string): ParseResult {
       if (levelIds.has(l.id)) p.add(`Two levels share the id "${l.id}".`);
       levelIds.add(l.id);
     }
-    for (const problem of validateTree(book)) p.add(problem);
+    // Ids must be unique across the manuscript and the trash together.
+    for (const problem of validateTree({ ...book, children: [...project.tree, ...project.trash] })) p.add(problem);
   }
   return p.list.length ? { ok: false, problems: p.list } : { ok: true, project };
 }
@@ -247,7 +254,7 @@ export function serializeProjectFile(project: ProjectFile): string {
 }
 
 export function newProject(title: string, author: string, settings: ProjectSettings): ProjectFile {
-  return { format: FORMAT_VERSION, title, author, settings, tree: [] };
+  return { format: FORMAT_VERSION, title, author, settings, tree: [], trash: [] };
 }
 
 /** Random, URL-safe ids for nodes (never derived from titles, so renaming is safe). */

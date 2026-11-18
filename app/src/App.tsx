@@ -1,123 +1,121 @@
-import { useEffect, useState } from 'react';
-import {
-  isDesktop,
-  isInstalled,
-  onInstallAvailable,
-  promptInstall,
-  registerServiceWorker,
-  requestPersistentStorage,
-  serviceWorkerSupported,
-} from './pwa';
-import { type Check, desktopPlatform, offlineCheck, storageCheck } from './lib/status';
+import { useCallback, useEffect, useState } from 'react';
+import { effectiveWarmth, resolvePage, warmthOverlay } from './appearance/appearance';
+import { useAppearance } from './appearance/useAppearance';
+import { isDesktop } from './pwa';
+import { newBrowserLocation, providerFor } from './project/locations';
+import { forgetRecent, readRecent, rememberRecent } from './project/recent';
+import { ProjectStore } from './project/store';
+import { createFolder } from './storage/native';
+import { projectFolderName } from './storage/paths';
+import { About, usePlatformSetup } from './ui/About';
+import { HelpMenu } from './ui/HelpMenu';
+import { NewProject, type NewProjectRequest } from './ui/NewProject';
+import { StartScreen } from './ui/StartScreen';
+import { Workspace } from './ui/Workspace';
 
-const platform = desktopPlatform(navigator.userAgent);
-
-function StatusRow({ title, state, label }: { title: string; state: Check; label: string }) {
-  const mark = state === 'ok' ? '✓' : state === 'pending' ? '…' : '–';
-  return (
-    <li className={`status status--${state}`}>
-      <span className="status__mark" aria-hidden="true">
-        {mark}
-      </span>
-      <span>
-        <strong>{title}</strong>
-        <br />
-        {label}
-      </span>
-    </li>
-  );
-}
+type Screen = { name: 'start' } | { name: 'new' } | { name: 'workspace'; store: ProjectStore };
 
 export default function App() {
-  const [offlineReady, setOfflineReady] = useState(false);
-  const [persisted, setPersisted] = useState<boolean | null>(null);
-  const [canInstall, setCanInstall] = useState(false);
-  const [installed, setInstalled] = useState(isInstalled());
-  const [online, setOnline] = useState(navigator.onLine);
+  const setup = usePlatformSetup();
+  const [screen, setScreen] = useState<Screen>({ name: 'start' });
+  const [recent, setRecent] = useState(readRecent);
+  const [about, setAbout] = useState(false);
+  const [error, setError] = useState('');
 
+  const look = useAppearance();
+  const [focus, setFocus] = useState(false);
+  const [now, setNow] = useState(() => new Date());
+  const showError = useCallback((message: string) => setError(message), []);
+
+  // The night-light schedule is checked once a minute.
   useEffect(() => {
-    registerServiceWorker()
-      .then(setOfflineReady)
-      .catch(() => setOfflineReady(false));
-    requestPersistentStorage().then(setPersisted);
-
-    const unsubscribe = onInstallAvailable(setCanInstall);
-    const updateOnline = () => setOnline(navigator.onLine);
-    const onInstalled = () => {
-      setInstalled(true);
-      requestPersistentStorage().then(setPersisted);
-    };
-    window.addEventListener('online', updateOnline);
-    window.addEventListener('offline', updateOnline);
-    window.addEventListener('appinstalled', onInstalled);
-    return () => {
-      unsubscribe();
-      window.removeEventListener('online', updateOnline);
-      window.removeEventListener('offline', updateOnline);
-      window.removeEventListener('appinstalled', onInstalled);
-    };
+    const timer = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(timer);
   }, []);
 
-  const offline = isDesktop
-    ? { state: 'ok' as Check, label: 'Built in – Narrivell never needs an internet connection' }
-    : import.meta.env.PROD
-      ? offlineCheck(offlineReady, serviceWorkerSupported)
-      : { state: 'unavailable' as Check, label: 'Off in development – use the deployed app to test this' };
-  const storage = isDesktop
-    ? { state: 'ok' as Check, label: 'Saved in your user profile on this computer – nothing clears it' }
-    : storageCheck(persisted);
-  const installState: Check = isDesktop || installed ? 'ok' : 'pending';
-  const installLabel = isDesktop
-    ? `Installed as a ${platform} app`
-    : installed
-      ? 'Running as an installed app'
-      : canInstall
-        ? 'Install Narrivell to open it like any other app'
-        : 'Use your browser’s menu → “Install app” or “Add to Home screen”';
+  const opened = (path: string, store: ProjectStore) => {
+    setRecent(rememberRecent({ path, title: store.project.title, openedAt: Date.now() }));
+    setScreen({ name: 'workspace', store });
+    setError('');
+  };
+
+  const openProject = async (path: string) => {
+    const result = await ProjectStore.open(await providerFor(path));
+    if (!result.ok) {
+      setError(`Couldn’t open that project. ${result.problems.slice(0, 3).join(' ')}`);
+      return;
+    }
+    opened(path, result.store);
+  };
+
+  const createProject = async ({ title, author, settings, parent }: NewProjectRequest) => {
+    const path = isDesktop && parent ? await createFolder(parent, projectFolderName(title)) : newBrowserLocation();
+    const store = await ProjectStore.create(await providerFor(path), title, author, settings);
+    opened(path, store);
+  };
+
+  const inWorkspace = screen.name === 'workspace';
+  const dark = resolvePage(look.appearance, look.systemDark).dark;
+  const warmth = effectiveWarmth(look.appearance, now);
+
+  // Focus mode: Ctrl+Shift+F toggles, Esc leaves.
+  useEffect(() => {
+    if (!inWorkspace) return setFocus(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        setFocus((f) => !f);
+      } else if (e.key === 'Escape') setFocus(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [inWorkspace]);
 
   return (
-    <main className="shell">
-      <header className="masthead">
-        <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="masthead__logo" />
-        <div>
-          <h1>Narrivell</h1>
-          <p className="tagline">A writing app that never loses a word.</p>
-        </div>
-      </header>
+    <div className={`app ${inWorkspace ? 'app--workspace' : ''} ${focus ? 'app--focus' : ''}`} data-chrome={dark ? 'dark' : 'light'}>
+      <div className="menubar">
+        <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="menubar__logo" />
+        <span className="menubar__brand">Narrivell</span>
+        {!isDesktop && inWorkspace && (
+          <span className="menubar__note">Browser test project – not for real manuscripts</span>
+        )}
+        <span className="menubar__gap" />
+        <HelpMenu onAbout={() => setAbout(true)} onError={showError} />
+      </div>
 
-      <section className="card">
-        <h2>Your setup</h2>
-        <ul className="statuses">
-          <StatusRow title="Works offline" {...offline} />
-          <StatusRow title="Storage" {...storage} />
-          <StatusRow title="Installed" state={installState} label={installLabel} />
-        </ul>
-        {!isDesktop && !installed && canInstall && (
-          <button type="button" className="button" onClick={() => promptInstall()}>
-            Install Narrivell
+      {error && (
+        <div className="banner" role="alert">
+          <span>{error}</span>
+          <button type="button" className="link-button" onClick={() => setError('')}>
+            Dismiss
           </button>
-        )}
-      </section>
+        </div>
+      )}
 
-      <section className="card card--quiet">
-        <h2>Coming next</h2>
-        <p>
-          Import your Word manuscript, organise it into parts, chapters, sections and
-          microchapters, and write with autosave and snapshots.
-        </p>
-      </section>
+      {screen.name === 'start' && (
+        <StartScreen
+          recent={recent}
+          onNew={() => setScreen({ name: 'new' })}
+          onOpen={openProject}
+          onForget={(path) => setRecent(forgetRecent(path))}
+          onError={showError}
+        />
+      )}
+      {screen.name === 'new' && <NewProject onCancel={() => setScreen({ name: 'start' })} onCreate={createProject} />}
+      {screen.name === 'workspace' && (
+        <Workspace
+          key={screen.store.storage.label}
+          store={screen.store}
+          look={look}
+          focus={focus}
+          onFocusChange={setFocus}
+          onClose={() => setScreen({ name: 'start' })}
+          onError={showError}
+        />
+      )}
 
-      <footer className="footer">
-        <span className={online ? 'dot dot--online' : 'dot dot--offline'} aria-hidden="true" />
-        {online ? 'Online' : 'Offline'} · Narrivell v{__APP_VERSION__} · Summer Grove Software
-        {/* In the Windows app a plain link would replace the app window with the web page. */}
-        {!isDesktop && (
-          <>
-            {' · '}
-            <a href="https://github.com/SummerGroveGames/narrivell">Source</a>
-          </>
-        )}
-      </footer>
-    </main>
+      {about && <About setup={setup} onClose={() => setAbout(false)} />}
+      {warmth > 0 && <div className="night-light" aria-hidden="true" style={{ backgroundColor: warmthOverlay(warmth) }} />}
+    </div>
   );
 }

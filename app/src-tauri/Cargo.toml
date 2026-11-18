@@ -18,6 +18,13 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
+# Official Tauri plugins only. Each one is limited by capabilities/default.json.
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-persisted-scope = "2"
+# Needed by tauri::generate_context!() once tauri.conf.json has a "plugins" section.
+serde_json = "1"
 
 [profile.release]
 codegen-units = 1
