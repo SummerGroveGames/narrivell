@@ -3,12 +3,12 @@ import { FORMAT_VERSION, newId, newProject, parseProjectFile, serializeProjectFi
 import { customSettings, fictionSettings, nonfictionSettings } from './templates';
 
 const sample = () => {
-  const project = newProject('The Stillness Index', 'Adam Lenke', fictionSettings('sequences-microchapters'));
+  const project = newProject('The Stillness Index', 'Adam Lenke', fictionSettings('sections-microchapters'));
   project.tree = [
     {
       kind: 'container',
       id: 'seq4',
-      levelId: 'sequence',
+      levelId: 'section',
       title: 'Sequence IV',
       children: [{ kind: 'unit', id: 'mc1', title: 'The Island' }],
     },

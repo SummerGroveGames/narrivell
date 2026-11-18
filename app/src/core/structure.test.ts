@@ -43,26 +43,26 @@ describe('formatNumber', () => {
 });
 
 describe('numberTree', () => {
-  it('numbers sequences with microchapters continuing through the book (the author’s structure)', () => {
+  it('numbers sections with microchapters continuing through the book (the author’s structure)', () => {
     const book: Book = {
-      structure: { levels: preset('sequences-microchapters') },
+      structure: { levels: preset('sections-microchapters') },
       children: [
-        box('s1', 'sequence', [unit('m1'), unit('m2')]),
-        box('s2', 'sequence', [unit('m3')]),
-        box('s4', 'sequence', [unit('m4'), unit('m5')]),
+        box('s1', 'section', [unit('m1'), unit('m2')]),
+        box('s2', 'section', [unit('m3')]),
+        box('s4', 'section', [unit('m4'), unit('m5')]),
       ],
     };
     const n = numberTree(book);
-    expect(n.get('s1')!.label).toBe('Sequence I');
-    expect(n.get('s4')!.label).toBe('Sequence III');
+    expect(n.get('s1')!.label).toBe('Section I');
+    expect(n.get('s4')!.label).toBe('Section III');
     expect(n.get('m3')!.label).toBe('3');
     expect(n.get('m5')!.label).toBe('5');
   });
 
   it('allows the optional chapter level to be used in some places only', () => {
     const book: Book = {
-      structure: { levels: preset('sequences-microchapters') },
-      children: [box('s1', 'sequence', [box('c1', 'chapter', [unit('m1'), unit('m2')]), unit('m3')])],
+      structure: { levels: preset('sections-microchapters') },
+      children: [box('s1', 'section', [box('c1', 'chapter', [unit('m1'), unit('m2')]), unit('m3')])],
     };
     expect(validateTree(book)).toEqual([]);
     const n = numberTree(book);
@@ -93,9 +93,9 @@ describe('numberTree', () => {
 });
 
 describe('validateTree', () => {
-  const levels = preset('sequences-microchapters');
+  const levels = preset('sections-microchapters');
   it('rejects a level inside a deeper level', () => {
-    const book: Book = { structure: { levels }, children: [box('c1', 'chapter', [box('s1', 'sequence', [])])] };
+    const book: Book = { structure: { levels }, children: [box('c1', 'chapter', [box('s1', 'section', [])])] };
     expect(validateTree(book).length).toBeGreaterThan(0);
   });
   it('rejects duplicate ids and unknown levels', () => {
@@ -107,8 +107,8 @@ describe('validateTree', () => {
 describe('restructuring', () => {
   it('moves units without touching anything else', () => {
     const book: Book = {
-      structure: { levels: preset('sequences-microchapters') },
-      children: [box('s1', 'sequence', [unit('m1'), unit('m2')]), box('s2', 'sequence', [unit('m3')])],
+      structure: { levels: preset('sections-microchapters') },
+      children: [box('s1', 'section', [unit('m1'), unit('m2')]), box('s2', 'section', [unit('m3')])],
     };
     moveAfter(book, 'm1', 'm3');
     expect(unitsInOrder(book).map((u) => u.unit.id)).toEqual(['m2', 'm3', 'm1']);
@@ -116,8 +116,8 @@ describe('restructuring', () => {
   });
   it('refuses to move a section inside itself', () => {
     const book: Book = {
-      structure: { levels: preset('sequences-microchapters') },
-      children: [box('s1', 'sequence', [box('c1', 'chapter', [unit('m1')])])],
+      structure: { levels: preset('sections-microchapters') },
+      children: [box('s1', 'section', [box('c1', 'chapter', [unit('m1')])])],
     };
     expect(() => moveAfter(book, 's1', 'm1')).toThrow();
   });

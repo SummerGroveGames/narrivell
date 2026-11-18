@@ -102,7 +102,7 @@ export default function App() {
       <section className="card card--quiet">
         <h2>Coming next</h2>
         <p>
-          Import your Word manuscript with its comments, organise it into books, sequences and
+          Import your Word manuscript, organise it into parts, chapters, sections and
           microchapters, and write with autosave and snapshots.
         </p>
       </section>

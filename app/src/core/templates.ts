@@ -75,11 +75,11 @@ export const FICTION_PRESETS: StructurePreset[] = [
     ],
   },
   {
-    id: 'sequences-microchapters',
-    label: 'Sequences and microchapters',
-    description: 'Sequence I–IV › short microchapters numbered through the book',
+    id: 'sections-microchapters',
+    label: 'Sections and microchapters',
+    description: 'Section I, II, III › short microchapters numbered through the book',
     levels: [
-      level('sequence', 'Sequence', 'upper-roman', { continuous: true }),
+      level('section', 'Section', 'upper-roman', { continuous: true }),
       level('chapter', 'Chapter', 'arabic', { continuous: true }),
       level('microchapter', 'Microchapter', 'arabic', { continuous: true, showName: false }),
     ],
@@ -125,7 +125,7 @@ export function fictionSettings(presetId = 'chapters'): ProjectSettings {
     levels: structuredClone(preset.levels),
     features: { notes: 'off', bibliography: false, figures: false, comments: true },
     matter: structuredClone(FICTION_MATTER),
-    unitTarget: presetId === 'sequences-microchapters' ? { min: 1000, max: 2000 } : null,
+    unitTarget: presetId === 'sections-microchapters' ? { min: 1000, max: 2000 } : null,
   };
 }
 

@@ -24,7 +24,7 @@ One purchase, no subscription, with a 60-day free trial (when released). The sou
 
 **First release (MVP)**
 - Import Word manuscripts, including tagged comments (e.g. `CONTINUITY: …`)
-- Binder: Book › Sequence › Microchapter, with drag-to-reorder
+- Binder that follows your own structure (parts, chapters, sections, microchapters), with drag-to-reorder
 - Distraction-free editor with autosave and named snapshots
 - Sync across devices via Google Drive, with conflict review
 - Generated book map with word counts vs. targets, printable in landscape with a notes column
