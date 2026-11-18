@@ -1,0 +1,50 @@
+# ---------------------------------------------------------------
+# PRIVATE WRITING – never commit manuscripts to this public repo
+# Keep your real book files in /private (or outside the repo).
+# Small, made-up test files go in tests/fixtures/ instead.
+# ---------------------------------------------------------------
+/private/
+*.docx
+*.doc
+!tests/fixtures/**/*.docx
+~$*
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+*.local
+
+# Tauri (Windows/Android app) build output
+**/src-tauri/target/
+**/src-tauri/gen/schemas/
+
+# Test output
+coverage/
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Environment and secrets (API keys, OAuth client secrets)
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Editors and OS
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini

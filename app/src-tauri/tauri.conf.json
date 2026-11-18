@@ -1,0 +1,69 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Narrivell",
+  "version": "../package.json",
+  "identifier": "com.summergrovesoftware.narrivell",
+  "build": {
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist",
+    "beforeDevCommand": "npm run dev -- --mode desktop",
+    "beforeBuildCommand": "npm run build -- --mode desktop"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Narrivell",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 480,
+        "minHeight": 400,
+        "center": true
+      }
+    ],
+    "security": {
+      "freezePrototype": true,
+      "csp": {
+        "default-src": "'self'",
+        "script-src": "'self'",
+        "style-src": "'self'",
+        "img-src": "'self' data: blob:",
+        "font-src": "'self'",
+        "connect-src": "ipc: http://ipc.localhost",
+        "object-src": "'none'",
+        "base-uri": "'self'",
+        "form-action": "'none'",
+        "frame-ancestors": "'none'"
+      },
+      "devCsp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "msi"],
+    "publisher": "Summer Grove Software",
+    "copyright": "© 2026 Summer Grove Software",
+    "category": "Productivity",
+    "shortDescription": "A writing app that never loses a word",
+    "longDescription": "Narrivell is a free, open-source writing app for novelists. Your book stays on your own devices and in your own storage.",
+    "homepage": "https://github.com/SummerGroveGames/narrivell",
+    "license": "LicenseRef-Narrivell-Source-Available",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      },
+      "nsis": {
+        "installMode": "perMachine",
+        "displayLanguageSelector": false
+      }
+    }
+  }
+}

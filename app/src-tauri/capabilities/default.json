@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Least privilege: the main window gets no native permissions until a feature needs one. Add each permission explicitly and review it.",
+  "windows": ["main"],
+  "permissions": []
+}
