@@ -33,6 +33,22 @@ export interface Structure {
   levels: Level[];
 }
 
+export type Status = 'idea' | 'drafted' | 'revised' | 'done';
+export type LabelColor = 'green' | 'gold' | 'rose' | 'blue' | 'purple' | 'grey';
+
+/** What the author notes about a binder item: shown on storyboard cards and in the notes panel. */
+export interface ItemDetails {
+  synopsis?: string;
+  status?: Status;
+  label?: LabelColor;
+  pov?: string;
+  when?: string;
+  where?: string;
+  /** The line or moment this item ends on (the hook). */
+  endsOn?: string;
+  notes?: string;
+}
+
 export interface ContainerNode {
   kind: 'container';
   id: string;
@@ -41,6 +57,7 @@ export interface ContainerNode {
   children: TreeNode[];
   /** Left out of numbering, e.g. a Prologue or Epilogue. */
   unnumbered?: boolean;
+  details?: ItemDetails;
 }
 
 export interface UnitNode {
@@ -49,6 +66,7 @@ export interface UnitNode {
   title: string;
   /** Left out of numbering, e.g. a Prologue or Epilogue. */
   unnumbered?: boolean;
+  details?: ItemDetails;
 }
 
 export type TreeNode = ContainerNode | UnitNode;

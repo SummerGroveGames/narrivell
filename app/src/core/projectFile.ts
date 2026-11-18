@@ -7,7 +7,7 @@
  * file produces clear errors rather than a crash, and never loses text
  * (text lives in the per-unit files, not here).
  */
-import type { Book, ContainerNode, Level, NumberStyle, TreeNode, UnitNode } from './structure';
+import type { Book, ContainerNode, ItemDetails, LabelColor, Level, NumberStyle, Status, TreeNode, UnitNode } from './structure';
 import { validateTree } from './structure';
 import type { FrontBackMatter, ProjectSettings, TemplateKind, WordTarget } from './templates';
 
@@ -163,6 +163,23 @@ function readSettings(v: unknown, p: Problems): ProjectSettings {
   };
 }
 
+const STATUSES: Status[] = ['idea', 'drafted', 'revised', 'done'];
+const LABELS: LabelColor[] = ['green', 'gold', 'rose', 'blue', 'purple', 'grey'];
+const DETAIL_LIMITS = { synopsis: 2000, pov: 120, when: 120, where: 120, endsOn: 500, notes: 20000 } as const;
+
+/** Item details are optional and forgiving: anything malformed is dropped, never fatal. */
+function readDetails(v: unknown): ItemDetails | undefined {
+  if (!isObject(v)) return undefined;
+  const d: ItemDetails = {};
+  for (const key of Object.keys(DETAIL_LIMITS) as (keyof typeof DETAIL_LIMITS)[]) {
+    const x = v[key];
+    if (typeof x === 'string' && x.trim()) d[key] = x.slice(0, DETAIL_LIMITS[key]);
+  }
+  if (typeof v.status === 'string' && (STATUSES as string[]).includes(v.status)) d.status = v.status as Status;
+  if (typeof v.label === 'string' && (LABELS as string[]).includes(v.label)) d.label = v.label as LabelColor;
+  return Object.keys(d).length ? d : undefined;
+}
+
 function readTree(v: unknown, p: Problems, depth: number, count: { n: number }): TreeNode[] {
   if (!Array.isArray(v)) {
     p.add('The binder is malformed.');
@@ -185,6 +202,8 @@ function readTree(v: unknown, p: Problems, depth: number, count: { n: number }):
     if (raw.kind === 'unit') {
       const unit: UnitNode = { kind: 'unit', id: id(raw.id, 'A unit', p), title: str(raw.title, 'A unit title', p) };
       if (raw.unnumbered === true) unit.unnumbered = true;
+      const unitDetails = readDetails(raw.details);
+      if (unitDetails) unit.details = unitDetails;
       out.push(unit);
     } else if (raw.kind === 'container') {
       const node: ContainerNode = {
@@ -195,6 +214,8 @@ function readTree(v: unknown, p: Problems, depth: number, count: { n: number }):
         children: readTree(raw.children, p, depth + 1, count),
       };
       if (raw.unnumbered === true) node.unnumbered = true;
+      const nodeDetails = readDetails(raw.details);
+      if (nodeDetails) node.details = nodeDetails;
       out.push(node);
     } else {
       p.add('A binder item has an unknown type.');

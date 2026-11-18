@@ -70,3 +70,21 @@ describe('newId', () => {
     for (const id of ids) expect(id).toMatch(/^[a-z0-9]{1,20}$/);
   });
 });
+
+describe('item details and unnumbered items', () => {
+  it('keeps valid details, drops bad ones, and keeps unnumbered flags', () => {
+    const project = newProject('Book', '', fictionSettings());
+    project.tree = [
+      { kind: 'unit', id: 'u1', title: 'Prologue', unnumbered: true, details: { synopsis: 'Before it all', status: 'drafted', label: 'gold', pov: 'Hale' } },
+    ];
+    const raw = JSON.parse(serializeProjectFile(project));
+    raw.tree[0].details.status = 'finished-ish';
+    raw.tree[0].details.label = 'neon';
+    raw.tree[0].details.extra = 'dropped';
+    const result = parseProjectFile(JSON.stringify(raw));
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.project.tree[0]).toEqual({ kind: 'unit', id: 'u1', title: 'Prologue', unnumbered: true, details: { synopsis: 'Before it all', pov: 'Hale' } });
+    }
+  });
+});

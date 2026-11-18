@@ -16,6 +16,7 @@ interface Props {
   onAddAfter: (id: string) => void;
   onNudge: (id: string, direction: -1 | 1) => void;
   onTrash: (id: string) => void;
+  onMerge: (id: string) => void;
 }
 
 const DRAG_TYPE = 'application/x-narrivell-node';
@@ -185,6 +186,7 @@ export function Binder(props: Props) {
           {item(`Add ${book.structure.levels[book.structure.levels.length - 1].name.toLowerCase()}`, () => props.onAddAfter(menu.id))}
           {item('Move up', () => props.onNudge(menu.id, -1))}
           {item('Move down', () => props.onNudge(menu.id, 1))}
+          {menuNode.kind === 'unit' && item('Merge with next', () => props.onMerge(menu.id))}
           {menuNode.kind === 'container' && item(collapsed.has(menu.id) ? 'Expand' : 'Collapse', () => onToggle(menu.id))}
           <li role="none" className="menu__divider" />
           {item('Move to trash…', () => props.onTrash(menu.id))}

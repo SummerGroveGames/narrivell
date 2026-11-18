@@ -131,6 +131,16 @@ export class ProjectStore {
     });
   }
 
+  /** Keeps a copy of a unit's current file in .history now (before a split or merge). */
+  snapshot(id: string): Promise<void> {
+    return this.run(async () => {
+      const existing = await this.storage.readText(unitJson(id));
+      if (existing === null) return;
+      await this.storage.makeDir(`${LAYOUT.history}/${id}`);
+      await this.storage.writeText(`${LAYOUT.history}/${id}/${stamp(new Date(this.now()))}.json`, existing);
+    });
+  }
+
   /** Saved versions of a unit, newest first. */
   async snapshots(id: string): Promise<string[]> {
     return (await this.storage.list(`${LAYOUT.history}/${id}`)).filter((n) => n.endsWith('.json')).reverse();
