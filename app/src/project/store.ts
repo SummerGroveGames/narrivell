@@ -131,6 +131,20 @@ export class ProjectStore {
     });
   }
 
+  /** Re-reads project.json after a sync changed it. */
+  async reload(): Promise<void> {
+    const text = await this.storage.readText(LAYOUT.projectFile);
+    if (!text) return;
+    const parsed = parseProjectFile(text);
+    if (parsed.ok) this.project = parsed.project;
+  }
+
+  /** Rewrites a unit's Markdown copy after its text arrived from another device. */
+  async rewriteMirror(id: string): Promise<void> {
+    const doc = await this.loadUnit(id);
+    await this.run(() => this.storage.writeText(unitMd(id), toMarkdown(doc, findNode(this.book, id)?.title ?? '')));
+  }
+
   /** Keeps a copy of a unit's current file in .history now (before a split or merge). */
   snapshot(id: string): Promise<void> {
     return this.run(async () => {

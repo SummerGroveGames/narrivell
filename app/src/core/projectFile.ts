@@ -177,6 +177,7 @@ function readDetails(v: unknown): ItemDetails | undefined {
   }
   if (typeof v.status === 'string' && (STATUSES as string[]).includes(v.status)) d.status = v.status as Status;
   if (typeof v.label === 'string' && (LABELS as string[]).includes(v.label)) d.label = v.label as LabelColor;
+  if (v.aiTitle === true) d.aiTitle = true;
   return Object.keys(d).length ? d : undefined;
 }
 

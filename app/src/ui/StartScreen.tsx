@@ -3,6 +3,7 @@ import { isDesktop } from '../pwa';
 import type { RecentProject } from '../project/recent';
 import { isBrowserLocation } from '../project/locations';
 import { pickFolder } from '../storage/native';
+import { type DriveItem, listDrive } from '../cloud/drive';
 
 interface Props {
   recent: RecentProject[];
@@ -10,9 +11,22 @@ interface Props {
   onOpen: (path: string) => Promise<void>;
   onForget: (path: string) => void;
   onError: (message: string) => void;
+  onGetFromDrive: (folder: DriveItem) => Promise<void>;
 }
 
-export function StartScreen({ recent, onNew, onOpen, onForget, onError }: Props) {
+export function StartScreen({ recent, onNew, onOpen, onForget, onError, onGetFromDrive }: Props) {
+  const [driveBooks, setDriveBooks] = useState<DriveItem[] | null>(null);
+  const showDrive = async () => {
+    setBusy(true);
+    try {
+      const [, items] = await listDrive();
+      setDriveBooks(items.filter((i) => i.folder));
+    } catch (e) {
+      onError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
   const [busy, setBusy] = useState(false);
   const shown = recent.filter((r) => isDesktop !== isBrowserLocation(r.path));
 
@@ -61,8 +75,48 @@ export function StartScreen({ recent, onNew, onOpen, onForget, onError }: Props)
               Open project…
             </button>
           )}
+          {isDesktop && (
+            <button type="button" className="button button--quiet" disabled={busy} onClick={showDrive}>
+              Get a book from Google Drive…
+            </button>
+          )}
         </div>
       </section>
+
+      {driveBooks && (
+        <section className="card">
+          <h2>Your books on Google Drive</h2>
+          {driveBooks.length === 0 ? (
+            <p className="muted small">No synced books yet. Open a book on your other computer and choose “Sync this book to Google Drive”.</p>
+          ) : (
+            <ul className="recent">
+              {driveBooks.map((b) => (
+                <li key={b.id}>
+                  <button
+                    type="button"
+                    className="recent__open"
+                    disabled={busy}
+                    onClick={async () => {
+                      setBusy(true);
+                      try {
+                        await onGetFromDrive(b);
+                      } catch (e) {
+                        onError(e instanceof Error ? e.message : String(e));
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  >
+                    <strong>{b.name.replace(/\.narrivell$/, '')}</strong>
+                    <span className="muted small">Choose where to keep it on this computer, then it downloads</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {!busy ? null : <p className="muted small">Working…</p>}
+        </section>
+      )}
 
       {shown.length > 0 && (
         <section className="card">

@@ -47,6 +47,8 @@ export interface ItemDetails {
   /** The line or moment this item ends on (the hook). */
   endsOn?: string;
   notes?: string;
+  /** The title was suggested by AI and hasn't been changed by the author since. */
+  aiTitle?: boolean;
 }
 
 export interface ContainerNode {

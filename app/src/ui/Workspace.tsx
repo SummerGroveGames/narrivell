@@ -14,7 +14,11 @@ import { ImportScreen } from './ImportScreen';
 import { Binder } from './Binder';
 import { Editor } from './Editor';
 import type { Editor as TiptapEditor } from '@tiptap/react';
-import { AssistPanel } from './AssistPanel';
+import { AssistPanel, type PartMeta } from './AssistPanel';
+import { readAiSettings } from '../ai/settings';
+import { mergeDocs as mergeEdits } from '../sync/merge';
+import type { SyncResult } from '../sync/engine';
+import { SyncControl } from './SyncControl';
 import { NotesPanel } from './NotesPanel';
 import { Storyboard } from './Storyboard';
 
@@ -203,7 +207,7 @@ export function Workspace({ store, look, focus, onFocusChange, onClose, onError 
   const [editorKey, setEditorKey] = useState(0);
   const currentDoc = (): DocNode | null => (editorRef.current ? (editorRef.current.getJSON() as DocNode) : (doc?.doc ?? null));
 
-  const splitInto = async (unitId: string, parts: DocNode[]) => {
+  const splitInto = async (unitId: string, parts: DocNode[], metas: PartMeta[] = []) => {
     if (parts.length < 2) return;
     try {
       // Save what's on screen, keep a snapshot of it, then divide it.
@@ -214,8 +218,19 @@ export function Workspace({ store, look, focus, onFocusChange, onClose, onError 
       await store.snapshot(unitId);
       let after = unitId;
       const ids: string[] = [];
+      const applyMeta = (unit: UnitNode, meta: PartMeta | undefined) => {
+        if (!meta) return;
+        if (meta.title && !unit.title.trim()) {
+          unit.title = meta.title;
+          if (meta.aiTitle && readAiSettings().trackAiContent) unit.details = { ...unit.details, aiTitle: true };
+        }
+        if (meta.endsOn && !unit.details?.endsOn) unit.details = { ...unit.details, endsOn: meta.endsOn };
+      };
+      const first = findNode(book, unitId);
+      if (first?.kind === 'unit') applyMeta(first, metas[0]);
       for (let k = 1; k < parts.length; k++) {
         const unit: UnitNode = { kind: 'unit', id: newId(), title: '' };
+        applyMeta(unit, metas[k]);
         insertAfter(book, after, unit);
         after = unit.id;
         ids.push(unit.id);
@@ -298,6 +313,34 @@ export function Workspace({ store, look, focus, onFocusChange, onClose, onError 
     void saveStructure();
   };
 
+  // --- After a sync brought changes from another computer ---------------------------
+  const afterSync = async (result: SyncResult) => {
+    if (!result.changed.length) return;
+    if (result.changed.includes('project.json')) await store.reload();
+    const counts = new Map<string, number>();
+    for (const path of result.changed) {
+      const m = /^manuscript\/([A-Za-z0-9_-]+)\.json$/.exec(path);
+      if (!m) continue;
+      try {
+        await store.rewriteMirror(m[1]);
+        const fresh = await store.loadUnit(m[1]);
+        counts.set(m[1], countWords(plainText(fresh)));
+        if (doc?.id === m[1]) {
+          // Anything typed while syncing is merged in, not lost.
+          const typed = pending.current?.id === m[1] ? pending.current.doc : null;
+          const next = typed ? mergeEdits(doc.doc, typed, fresh).doc : fresh;
+          if (typed) pending.current = { id: m[1], doc: next };
+          setDoc({ id: m[1], doc: next });
+          setEditorKey((k) => k + 1);
+        }
+      } catch {
+        // A damaged file shows its own message when opened.
+      }
+    }
+    setWords((w) => new Map([...w, ...counts]));
+    refresh();
+  };
+
   // --- Views -----------------------------------------------------------------------
   const [view, setView] = useState<'write' | 'storyboard'>('write');
   const [notesOpen, setNotesOpen] = useState(true);
@@ -376,6 +419,7 @@ export function Workspace({ store, look, focus, onFocusChange, onClose, onError 
         </div>
 
         <footer className="sidebar__foot">
+          <SyncControl store={store} beforeSync={flush} afterSync={afterSync} onError={onError} />
           <span>
             {totalWords.toLocaleString()} words · {unitCount} {unitLevel.name.toLowerCase()}
             {unitCount === 1 ? '' : 's'}
@@ -531,10 +575,12 @@ export function Workspace({ store, look, focus, onFocusChange, onClose, onError 
                 getDoc={currentDoc}
                 target={assistTarget}
                 unitName={unitLevel.name}
+                label={displayLabel(book, selected!, numbers)}
+                storage={store.storage}
                 onShow={showBlock}
-                onAccept={(blocks) => {
+                onAccept={(blocks, metas) => {
                   const whole = currentDoc();
-                  if (whole) void splitInto(selected!.id, splitAtBlocks(whole, blocks));
+                  if (whole) void splitInto(selected!.id, splitAtBlocks(whole, blocks), metas);
                 }}
                 onClose={() => setAssistOn(false)}
               />

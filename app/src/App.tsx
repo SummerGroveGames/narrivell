@@ -5,9 +5,14 @@ import { isDesktop } from './pwa';
 import { newBrowserLocation, providerFor } from './project/locations';
 import { forgetRecent, readRecent, rememberRecent } from './project/recent';
 import { ProjectStore } from './project/store';
-import { createFolder } from './storage/native';
+import { createFolder, pickFolder } from './storage/native';
+import { type DriveItem, DriveRemote } from './cloud/drive';
+import { type SyncState, syncProject, writeSyncState } from './sync/engine';
+import { unitsInOrder } from './core/structure';
 import { projectFolderName } from './storage/paths';
 import { About, usePlatformSetup } from './ui/About';
+import { AiSettings } from './ui/AiSettings';
+import { CloudSettings } from './ui/CloudSettings';
 import { HelpMenu } from './ui/HelpMenu';
 import { NewProject, type NewProjectRequest } from './ui/NewProject';
 import { StartScreen } from './ui/StartScreen';
@@ -20,6 +25,19 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>({ name: 'start' });
   const [recent, setRecent] = useState(readRecent);
   const [about, setAbout] = useState(false);
+  const [aiSettings, setAiSettings] = useState(false);
+  const [cloudSettings, setCloudSettings] = useState(false);
+
+  useEffect(() => {
+    const openAi = () => setAiSettings(true);
+    const openCloud = () => setCloudSettings(true);
+    window.addEventListener('narrivell:open-ai-settings', openAi);
+    window.addEventListener('narrivell:open-cloud-settings', openCloud);
+    return () => {
+      window.removeEventListener('narrivell:open-ai-settings', openAi);
+      window.removeEventListener('narrivell:open-cloud-settings', openCloud);
+    };
+  }, []);
   const [error, setError] = useState('');
 
   const look = useAppearance();
@@ -54,6 +72,21 @@ export default function App() {
     opened(path, store);
   };
 
+  /** Downloads a synced book into a folder the author picks, then opens it. */
+  const getFromDrive = async (folder: DriveItem) => {
+    const parent = await pickFolder('Choose where to keep this book on this computer');
+    if (!parent) return;
+    const path = await createFolder(parent, folder.name.endsWith('.narrivell') ? folder.name : `${folder.name}.narrivell`);
+    const storage = await providerFor(path);
+    const state: SyncState = { format: 1, provider: 'google', folderId: folder.id, files: {}, lastSync: null };
+    await writeSyncState(storage, state);
+    await syncProject(storage, new DriveRemote(folder.id), state);
+    const result = await ProjectStore.open(storage);
+    if (!result.ok) throw new Error(`The book on Google Drive couldn’t be opened. ${result.problems.slice(0, 2).join(' ')}`);
+    for (const { unit } of unitsInOrder(result.store.book)) await result.store.rewriteMirror(unit.id).catch(() => undefined);
+    opened(path, result.store);
+  };
+
   const inWorkspace = screen.name === 'workspace';
   const dark = resolvePage(look.appearance, look.systemDark).dark;
   const warmth = effectiveWarmth(look.appearance, now);
@@ -80,6 +113,12 @@ export default function App() {
           <span className="menubar__note">Browser test project – not for real manuscripts</span>
         )}
         <span className="menubar__gap" />
+        <button type="button" className="menu__button" onClick={() => setCloudSettings(true)} title="Sync your books with Google Drive">
+          Cloud
+        </button>
+        <button type="button" className="menu__button" onClick={() => setAiSettings(true)} title="Connect an AI service">
+          AI
+        </button>
         <HelpMenu onAbout={() => setAbout(true)} onError={showError} />
       </div>
 
@@ -99,6 +138,7 @@ export default function App() {
           onOpen={openProject}
           onForget={(path) => setRecent(forgetRecent(path))}
           onError={showError}
+          onGetFromDrive={getFromDrive}
         />
       )}
       {screen.name === 'new' && <NewProject onCancel={() => setScreen({ name: 'start' })} onCreate={createProject} />}
@@ -115,6 +155,8 @@ export default function App() {
       )}
 
       {about && <About setup={setup} onClose={() => setAbout(false)} />}
+      {aiSettings && <AiSettings onClose={() => setAiSettings(false)} />}
+      {cloudSettings && <CloudSettings onClose={() => setCloudSettings(false)} />}
       {warmth > 0 && <div className="night-light" aria-hidden="true" style={{ backgroundColor: warmthOverlay(warmth) }} />}
     </div>
   );

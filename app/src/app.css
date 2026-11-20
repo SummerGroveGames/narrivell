@@ -2246,3 +2246,140 @@ img.ProseMirror-separator {
     box-shadow: var(--shadow);
   }
 }
+
+/* AI connections and AI assist */
+
+.dialog--wide {
+  width: min(44rem, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+}
+
+.ai-switch {
+  border-top: 0;
+}
+
+.ai-providers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.ai-provider {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  padding: 0.65rem 0.75rem;
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  cursor: pointer;
+}
+
+.ai-provider--on {
+  border-color: var(--grove);
+  box-shadow: 0 0 0 1px var(--grove);
+  background: var(--grove-soft);
+}
+
+.ai-detail {
+  padding: 0.75rem 1rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: var(--raised);
+}
+
+.ai-detail p {
+  margin: 0.2rem 0;
+}
+
+.ai-ask {
+  margin-top: 0.9rem;
+}
+
+.ok-text {
+  color: var(--ok);
+}
+
+.ai-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: var(--raised);
+  font-size: 0.85rem;
+}
+
+.ai-preview ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.ai-preview__text {
+  max-height: 14rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-size: 0.75rem;
+  background: var(--card);
+  padding: 0.5rem;
+  border-radius: 0.4rem;
+}
+
+.assist-rules summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.assist-rules textarea {
+  width: 100%;
+  margin-top: 0.4rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--ink);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 0.45rem;
+  padding: 0.45rem 0.55rem;
+  resize: vertical;
+}
+
+.assist-item__title {
+  font-size: 0.85rem;
+}
+
+.assist-item__title em {
+  font-family: var(--serif);
+}
+
+.ai-notice {
+  margin: 0 0 1rem;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar__foot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.sync-line {
+  text-align: left;
+  font-size: 0.75rem;
+  text-decoration: none;
+  padding: 0;
+}
+
+.sync-line:hover {
+  text-decoration: underline;
+}

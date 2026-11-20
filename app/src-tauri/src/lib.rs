@@ -1,3 +1,6 @@
+mod ai;
+mod cloud;
+
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_fs::FsExt;
 
@@ -52,7 +55,22 @@ pub fn run() {
         .plugin(tauri_plugin_persisted_scope::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![pick_folder, pick_import_file])
+        .invoke_handler(tauri::generate_handler![
+            pick_folder,
+            pick_import_file,
+            ai::ai_save_key,
+            ai::ai_has_key,
+            ai::ai_forget_key,
+            ai::ai_models,
+            ai::ai_chat,
+            cloud::cloud_status,
+            cloud::cloud_connect,
+            cloud::cloud_disconnect,
+            cloud::drive_list,
+            cloud::drive_mkdir,
+            cloud::drive_read,
+            cloud::drive_write
+        ])
         .run(tauri::generate_context!())
         .expect("error while running Narrivell");
 }

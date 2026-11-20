@@ -3,7 +3,7 @@ import type { DocNode } from '../project/doc';
 import { mergeDocs, splitAtBlocks } from '../project/split';
 import { suggestBreaks } from './rules';
 
-const words = (n: number, end = '.') => `${Array.from({ length: n }, (_, i) => `word${i}`).join(' ')}${end}`;
+const words = (n: number, end = '.') => `${Array.from({ length: n }, (_, i) => (i ? `word${i}` : 'Word0')).join(' ')}${end}`;
 const p = (text: string): DocNode => ({ type: 'paragraph', content: [{ type: 'text', text }] });
 const doc = (...content: DocNode[]): DocNode => ({ type: 'doc', content });
 const target = { min: 1000, max: 2000 };
@@ -47,5 +47,38 @@ describe('split and merge', () => {
   it('merges with a scene break between, and ignores empty halves', () => {
     expect(mergeDocs(doc(p('a')), doc(p('b')))).toEqual(doc(p('a'), { type: 'horizontalRule' }, p('b')));
     expect(mergeDocs(doc({ type: 'paragraph' }), doc(p('b')))).toEqual(doc(p('b')));
+  });
+});
+
+describe('keeping complete thoughts together', () => {
+  const longScene = (n: number) => Array.from({ length: n }, () => p(words(100)));
+
+  it('never splits inside or right around a message', () => {
+    const blocks: DocNode[] = [
+      ...longScene(14),
+      p('A new message.'),
+      p('From: Mercer, Elias\nSubject: Re: anomaly'),
+      p('He opened it.'),
+      p('Hale— Good. Stay boring.'),
+      p(words(100)),
+      p('—M.'),
+      p('Hale read it twice.'),
+      ...longScene(14),
+    ];
+    const plan = suggestBreaks(doc(...blocks), target);
+    for (const s of plan.suggestions) expect(s.at <= 12 || s.at >= 22).toBe(true);
+  });
+
+  it('does not split a conversation', () => {
+    const talk = Array.from({ length: 40 }, (_, i) => p(`“${words(48)}” ${i}`));
+    const plan = suggestBreaks(doc(...talk), target);
+    expect(plan.suggestions).toEqual([]);
+  });
+
+  it('lets a short beat set apart by scene breaks stand on its own', () => {
+    const blocks: DocNode[] = [...longScene(15), { type: 'horizontalRule' }, p('Somewhere, a phone lit up. Keep an eye on him.'), p('Got it.')];
+    const plan = suggestBreaks(doc(...blocks), target);
+    expect(plan.suggestions.map((s) => s.at)).toEqual([15]);
+    expect(plan.lengths[1]).toBeLessThan(50);
   });
 });

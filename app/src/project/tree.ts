@@ -91,7 +91,10 @@ export function nudge(book: Book, id: string, direction: -1 | 1): boolean {
 export function rename(book: Book, id: string, title: string): void {
   const node = findNode(book, id);
   if (!node) throw new Error('That item no longer exists.');
-  node.title = title.replace(/[\r\n]+/g, ' ').slice(0, 500);
+  const next = title.replace(/[\r\n]+/g, ' ').slice(0, 500);
+  // Once the author changes an AI-suggested title, it's theirs.
+  if (next !== node.title && node.details?.aiTitle) delete node.details.aiTitle;
+  node.title = next;
 }
 
 /** Moves a unit or container into the book's trash list (kept on disk; nothing is deleted). */

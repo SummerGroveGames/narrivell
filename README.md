@@ -114,7 +114,7 @@ Tested on Linux Mint (Ubuntu-based). Install the build requirements:
 
 ```bash
 sudo apt update
-sudo apt install build-essential curl wget file git libwebkit2gtk-4.1-dev libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+sudo apt install build-essential curl wget file git libwebkit2gtk-4.1-dev libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev libdbus-1-dev pkg-config
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 

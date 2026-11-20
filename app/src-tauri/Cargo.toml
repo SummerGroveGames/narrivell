@@ -15,6 +15,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
+serde_json = "1"
 
 [dependencies]
 tauri = { version = "2", features = [] }
@@ -25,6 +26,15 @@ tauri-plugin-opener = "2"
 tauri-plugin-persisted-scope = "2"
 # Needed by tauri::generate_context!() once tauri.conf.json has a "plugins" section.
 serde_json = "1"
+serde = { version = "1", features = ["derive"] }
+# AI connections (src/ai.rs): HTTPS with rustls, keys in the OS credential store.
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+keyring = { version = "3", features = ["windows-native", "sync-secret-service", "crypto-rust"] }
+# Cloud sign-in (src/cloud.rs): PKCE and the one-time loopback address.
+base64 = "0.22"
+sha2 = "0.10"
+getrandom = "0.2"
+tokio = { version = "1", features = ["net", "io-util", "time"] }
 
 [profile.release]
 codegen-units = 1

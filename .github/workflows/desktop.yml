@@ -1,0 +1,93 @@
+name: Desktop installers
+
+# Builds the Windows (.exe, .msi) and Linux (.deb, .rpm) installers.
+# Runs only when started by hand (Actions > Desktop installers > Run workflow)
+# or when a version tag like v0.1.0 is pushed. Never on pull requests, so
+# the Google client secrets are never exposed to code from other people.
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu 22.04 base = runs on Linux Mint 21 and 22, Ubuntu 22.04+
+          - os: ubuntu-22.04
+            name: linux
+            bundles: |
+              app/src-tauri/target/release/bundle/deb/*.deb
+              app/src-tauri/target/release/bundle/rpm/*.rpm
+          - os: windows-latest
+            name: windows
+            bundles: |
+              app/src-tauri/target/release/bundle/nsis/*.exe
+              app/src-tauri/target/release/bundle/msi/*.msi
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Linux build packages
+        if: matrix.name == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file \
+            libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev \
+            libdbus-1-dev pkg-config
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri
+
+      - name: Install (exact versions from package-lock.json)
+        run: npm ci
+
+      - name: Security audit - shipped dependencies must be clean
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Test
+        run: npm test
+
+      - name: Check the Google keys are set
+        shell: bash
+        env:
+          ID: ${{ secrets.NARRIVELL_GOOGLE_CLIENT_ID }}
+          SECRET: ${{ secrets.NARRIVELL_GOOGLE_CLIENT_SECRET }}
+        run: |
+          if [ -z "$ID" ] || [ -z "$SECRET" ]; then
+            echo "::error::Add NARRIVELL_GOOGLE_CLIENT_ID and NARRIVELL_GOOGLE_CLIENT_SECRET under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - name: Build installers
+        env:
+          NARRIVELL_GOOGLE_CLIENT_ID: ${{ secrets.NARRIVELL_GOOGLE_CLIENT_ID }}
+          NARRIVELL_GOOGLE_CLIENT_SECRET: ${{ secrets.NARRIVELL_GOOGLE_CLIENT_SECRET }}
+        run: npm run desktop:build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: narrivell-${{ matrix.name }}
+          path: ${{ matrix.bundles }}
+          if-no-files-found: error
+          retention-days: 14
