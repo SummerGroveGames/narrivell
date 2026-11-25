@@ -33,7 +33,7 @@ keyring = { version = "3", features = ["windows-native", "sync-secret-service", 
 # Cloud sign-in (src/cloud.rs): PKCE and the one-time loopback address.
 base64 = "0.22"
 sha2 = "0.10"
-getrandom = "0.2"
+getrandom = "0.4"
 tokio = { version = "1", features = ["net", "io-util", "time"] }
 
 [profile.release]
